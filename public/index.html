@@ -45,33 +45,65 @@
             <option value="district">Sort by District</option>
           </select>
         </div>
-        <div id="admin-controls" class="hidden">
-          <button onclick="showAddStoreForm()">Add New Store</button>
-        </div>
       </section>
 
-      <!-- Add/Edit Store Form (hidden by default) -->
-      <section id="store-form" class="hidden">
-        <h2 id="form-title">Add New Store</h2>
-        <form id="add-edit-store-form">
-          <input
-            type="text"
-            id="store-name"
-            placeholder="Store Name"
-            required
-          />
-          <input type="url" id="store-url" placeholder="Website URL" />
-          <select id="store-district" required>
-            <option value="">Select District</option>
-          </select>
-          <input type="text" id="store-phone" placeholder="Phone Number" />
-          <input type="email" id="store-email" placeholder="Email" />
-          <input type="text" id="store-address" placeholder="Address" />
-          <textarea id="store-description" placeholder="Description"></textarea>
-          <button type="submit">Save Store</button>
-          <button type="button" onclick="hideStoreForm()">Cancel</button>
-        </form>
-      </section>
+      <!-- Admin Controls -->
+      <div id="admin-controls" class="hidden">
+        <button onclick="showStoreForm()">Add New Store</button>
+
+        <!-- Store Form -->
+        <div id="store-form" class="modal hidden">
+          <div class="modal-content">
+            <span class="close" onclick="hideStoreForm()">&times;</span>
+            <h2>Add New Store</h2>
+            <form id="add-edit-store-form">
+              <div class="form-group">
+                <label for="name">Store Name*</label>
+                <input type="text" id="name" name="name" required />
+              </div>
+
+              <div class="form-group">
+                <label for="url">Website URL</label>
+                <input type="url" id="url" name="url" />
+              </div>
+
+              <div class="form-group">
+                <label for="district">District*</label>
+                <select id="district" name="district" required>
+                  <option value="">Select District</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" name="phone" />
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" />
+              </div>
+
+              <div class="form-group">
+                <label for="address">Address</label>
+                <input type="text" id="address" name="address" />
+              </div>
+
+              <div class="form-group">
+                <label for="categories">Categories (comma-separated)</label>
+                <input type="text" id="categories" name="categories" />
+              </div>
+
+              <button type="submit">Add Store</button>
+            </form>
+          </div>
+        </div>
+      </div>
 
       <!-- Stores List -->
       <section id="stores-list">

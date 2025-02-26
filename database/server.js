@@ -1,14 +1,18 @@
 const express = require("express");
 const { Client } = require("pg");
 const cors = require("cors");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const PORT = process.env.PORT || 3000;
 const path = require("path");
 
+const JWT_SECRET = "your-secret-key";
+
 const app = express();
+
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-app.use(express.static(path.join(__dirname, "../public")));
 
 const client = new Client({
   host: "localhost",
@@ -18,13 +22,93 @@ const client = new Client({
   database: "postgres",
 });
 
-//connection to the database and start the server
+//athentication
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Access denied" });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+//Admin
+const isAdmin = (req, res, next) => {
+  if (!req.user.is_admin) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
+};
+
 const startServer = async () => {
   try {
     await client.connect();
     console.log("Connected to PostgreSQL database");
 
-    //get all stores
+    app.post("/api/auth/login", async (req, res) => {
+      try {
+        const { username, password } = req.body;
+        console.log("Login attempt for:", username);
+
+        //get user from database
+        const result = await client.query(
+          "SELECT * FROM users WHERE username = $1",
+          [username]
+        );
+
+        const user = result.rows[0];
+        console.log("User found:", user ? "yes" : "no");
+
+        if (!user) {
+          return res.status(401).json({ error: "User not found" });
+        }
+
+        //check password
+        const validPassword = await bcrypt.compare(
+          password,
+          user.password_hash
+        );
+        console.log("Password valid:", validPassword);
+
+        if (!validPassword) {
+          return res.status(401).json({ error: "Invalid password" });
+        }
+
+        //create token
+        const token = jwt.sign(
+          {
+            id: user.id,
+            username: user.username,
+            is_admin: user.is_admin,
+          },
+          JWT_SECRET,
+          { expiresIn: "24h" }
+        );
+
+        const { password_hash, ...userWithoutPassword } = user;
+        res.json({
+          token,
+          user: userWithoutPassword,
+        });
+      } catch (err) {
+        console.error("Login error:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    });
+
+    //verify token route
+    app.get("/api/auth/verify", authenticateToken, (req, res) => {
+      res.json({ user: req.user });
+    });
+
     app.get("/api/stores", async (req, res) => {
       try {
         const result = await client.query("SELECT * FROM stores ORDER BY name");
@@ -34,6 +118,61 @@ const startServer = async () => {
         res
           .status(500)
           .json({ error: "Internal server error", details: err.message });
+      }
+    });
+
+    //Add store, only admin
+    app.post("/api/stores", authenticateToken, isAdmin, async (req, res) => {
+      try {
+        const {
+          name,
+          url,
+          district,
+          description,
+          phone,
+          email,
+          address,
+          categories,
+        } = req.body;
+
+        const result = await client.query(
+          `INSERT INTO stores (
+            name,
+            url,
+            district,
+            description,
+            phone,
+            email,
+            address,
+            categories,
+            created_by,
+            last_updated_by
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
+          RETURNING *`,
+          [
+            name,
+            url,
+            district,
+            description,
+            phone,
+            email,
+            address,
+            categories,
+            req.user.id,
+          ]
+        );
+
+        res.status(201).json(result.rows[0]);
+      } catch (err) {
+        console.error("Error creating store:", err);
+        if (err.code === "23505") {
+          // Unique violation
+          res
+            .status(400)
+            .json({ error: "A store with this name already exists" });
+        } else {
+          res.status(500).json({ error: "Internal server error" });
+        }
       }
     });
 
@@ -75,18 +214,17 @@ const startServer = async () => {
       }
     });
 
+    //health check
     app.get("/api/health", (req, res) => {
       res.json({ status: "OK", message: "Server is running" });
     });
 
-    app.get("/", (req, res) => {
-      res.sendFile(path.join(__dirname, "../public/index.html"));
-    });
+    //static files
+    app.use(express.static(path.join(__dirname, "../public")));
 
-    //error handling
-    app.use((err, req, res, next) => {
-      console.error(err.stack);
-      res.status(500).json({ error: "Something went wrong!" });
+    //index.html for all other routes
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(__dirname, "../public/index.html"));
     });
 
     app.listen(PORT, () => {

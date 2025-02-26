@@ -47,7 +47,6 @@ async function initDB() {
         description TEXT,
         phone VARCHAR(20),
         email VARCHAR(255),
-        opening_hours JSONB,
         address TEXT,
         categories TEXT[],
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

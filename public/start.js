@@ -40,18 +40,15 @@ async function login() {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || "Login failed");
+      throw new Error(error.error || "Login failed");
     }
 
     const data = await response.json();
     currentUser = data.user;
     localStorage.setItem("token", data.token);
 
-    // Update UI
-    showUserInfo();
-    if (currentUser.is_admin) {
-      document.getElementById("admin-controls").classList.remove("hidden");
-    }
+    updateAuthUI();
+    loadStores();
   } catch (error) {
     alert(error.message);
   }
@@ -60,18 +57,29 @@ async function login() {
 function logout() {
   currentUser = null;
   localStorage.removeItem("token");
-  document.getElementById("login-form").classList.remove("hidden");
-  document.getElementById("user-info").classList.add("hidden");
-  document.getElementById("admin-controls").classList.add("hidden");
+  updateAuthUI();
+  loadStores();
 }
 
-function showUserInfo() {
-  document.getElementById("login-form").classList.add("hidden");
-  document.getElementById("register-form").classList.add("hidden");
-  document.getElementById("user-info").classList.remove("hidden");
-  document.getElementById(
-    "user-welcome"
-  ).textContent = `Welcome, ${currentUser.username}!`;
+function updateAuthUI() {
+  if (currentUser) {
+    loginForm.classList.add("hidden");
+    registerForm.classList.add("hidden");
+    userInfo.classList.remove("hidden");
+    document.getElementById(
+      "user-welcome"
+    ).textContent = `Welcome, ${currentUser.username}!`;
+    if (currentUser.is_admin) {
+      adminControls.classList.remove("hidden");
+    } else {
+      adminControls.classList.add("hidden");
+    }
+  } else {
+    loginForm.classList.remove("hidden");
+    registerForm.classList.add("hidden");
+    userInfo.classList.add("hidden");
+    adminControls.classList.add("hidden");
+  }
 }
 
 async function loadStores() {
@@ -97,16 +105,17 @@ async function loadDistricts() {
 
 function updateDistrictFilters(districts) {
   const filterSelect = document.getElementById("district-filter");
-  const formSelect = document.getElementById("store-district");
-
   filterSelect.innerHTML = '<option value="">All Districts</option>';
+
+  const formSelect = document.getElementById("district");
   formSelect.innerHTML = '<option value="">Select District</option>';
 
   districts.forEach((district) => {
     if (district) {
-      //only add non-null districts
-      filterSelect.add(new Option(district, district));
-      formSelect.add(new Option(district, district));
+      const filterOption = new Option(district, district);
+      const formOption = new Option(district, district);
+      filterSelect.add(filterOption);
+      formSelect.add(formOption);
     }
   });
 }
@@ -116,25 +125,32 @@ function displayStores(storesToShow) {
   storesToShow.forEach((store) => {
     const card = document.createElement("div");
     card.className = "store-card";
+
+    //format the URL properly
+    let formattedUrl = store.url;
+    if (formattedUrl && !formattedUrl.startsWith("http")) {
+      formattedUrl = "https://" + formattedUrl;
+    }
+
     card.innerHTML = `
-            <h3>${store.name}</h3>
-            ${store.district ? `<p>District: ${store.district}</p>` : ""}
-            ${
-              store.url
-                ? `<p><a href="${store.url}" target="_blank">Visit Website</a></p>`
-                : ""
-            }
-            ${
-              currentUser?.isAdmin
-                ? `
-                <div class="admin-actions">
-                    <button onclick="editStore(${store.id})" class="secondary">Edit</button>
-                    <button onclick="deleteStore(${store.id})" class="danger">Delete</button>
-                </div>
-            `
-                : ""
-            }
-        `;
+      <h3>${store.name}</h3>
+      ${store.district ? `<p>District: ${store.district}</p>` : ""}
+      ${
+        formattedUrl
+          ? `<p><a href="${formattedUrl}" target="_blank">Visit Website</a></p>`
+          : ""
+      }
+      ${
+        currentUser?.is_admin
+          ? `
+          <div class="admin-actions">
+              <button onclick="editStore(${store.id})" class="secondary">Edit</button>
+              <button onclick="deleteStore(${store.id})" class="danger">Delete</button>
+          </div>
+      `
+          : ""
+      }
+    `;
     storesList.appendChild(card);
   });
 }
@@ -179,79 +195,78 @@ function showAddStoreForm() {
   storeForm.classList.remove("hidden");
 }
 
-function hideStoreForm() {
-  storeForm.classList.add("hidden");
-  addEditStoreForm.reset();
+function showStoreForm() {
+  const storeFormModal = document.getElementById("store-form");
+  storeFormModal.classList.remove("hidden");
+  storeFormModal.classList.add("show");
+
+  // load districts in the dropdown
+  loadDistricts();
 }
 
-addEditStoreForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const formData = {
-    name: document.getElementById("store-name").value,
-    url: document.getElementById("store-url").value,
-    district: document.getElementById("store-district").value,
-    phone: document.getElementById("store-phone").value,
-    email: document.getElementById("store-email").value,
-    address: document.getElementById("store-address").value,
-    description: document.getElementById("store-description").value,
+function hideStoreForm() {
+  const storeFormModal = document.getElementById("store-form");
+  storeFormModal.classList.remove("show");
+  storeFormModal.classList.add("hidden");
+  document.getElementById("add-edit-store-form").reset();
+}
+
+async function addStore(event) {
+  event.preventDefault();
+
+  const formData = new FormData(event.target);
+
+  //to fix the websites problems
+  let url = formData.get("url");
+  if (url && !url.startsWith("http")) {
+    url = "https://" + url;
+  }
+
+  const storeData = {
+    name: formData.get("name"),
+    url: url,
+    district: formData.get("district"),
+    description: formData.get("description"),
+    phone: formData.get("phone"),
+    email: formData.get("email"),
+    address: formData.get("address"),
+    categories: formData.get("categories")
+      ? formData
+          .get("categories")
+          .split(",")
+          .map((cat) => cat.trim())
+      : [],
   };
 
-  console.log("Store form submitted:", formData);
-  hideStoreForm();
-});
-
-async function register() {
-  const username = document.getElementById("reg-username").value;
-  const email = document.getElementById("reg-email").value;
-  const password = document.getElementById("reg-password").value;
-
   try {
-    const response = await fetch("/api/auth/register", {
+    const response = await fetch("/api/stores", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
-      body: JSON.stringify({ username, email, password }),
+      body: JSON.stringify(storeData),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || "Registration failed");
+      throw new Error(error.error || "Failed to add store");
     }
 
-    alert("Registration successful! Please login.");
-    showLogin();
+    const newStore = await response.json();
+    alert("Store added successfully!");
+
+    //reset form and refresh stores list
+    hideStoreForm();
+    await loadStores();
   } catch (error) {
     alert(error.message);
   }
 }
 
-// Check for existing login on page load
-window.addEventListener("load", () => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    // Verify token and get user info
-    fetch("/api/auth/verify", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.user) {
-          currentUser = data.user;
-          showUserInfo();
-          if (currentUser.is_admin) {
-            document
-              .getElementById("admin-controls")
-              .classList.remove("hidden");
-          }
-        }
-      })
-      .catch(() => {
-        localStorage.removeItem("token");
-      });
-  }
-});
+//event listener for the store form
+document
+  .getElementById("add-edit-store-form")
+  .addEventListener("submit", addStore);
 
 loadStores();
