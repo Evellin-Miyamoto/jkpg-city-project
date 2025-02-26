@@ -2,11 +2,13 @@ const express = require("express");
 const { Client } = require("pg");
 const cors = require("cors");
 const PORT = process.env.PORT || 3000;
+const path = require("path");
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use(express.static(path.join(__dirname, "../public")));
 
 const client = new Client({
   host: "localhost",
@@ -28,8 +30,10 @@ const startServer = async () => {
         const result = await client.query("SELECT * FROM stores ORDER BY name");
         res.json(result.rows);
       } catch (err) {
-        console.error("Error fetching stores:", err);
-        res.status(500).json({ error: "Internal server error" });
+        console.error("Error fetching stores:", err.stack);
+        res
+          .status(500)
+          .json({ error: "Internal server error", details: err.message });
       }
     });
 
@@ -73,6 +77,10 @@ const startServer = async () => {
 
     app.get("/api/health", (req, res) => {
       res.json({ status: "OK", message: "Server is running" });
+    });
+
+    app.get("/", (req, res) => {
+      res.sendFile(path.join(__dirname, "../public/index.html"));
     });
 
     //error handling
