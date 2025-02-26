@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jönköping City Stores</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Jönköping City Stores</h1>
+      <div id="auth-section">
+        <!-- Login Form -->
+        <div id="login-form" class="auth-form">
+          <input type="text" id="username" placeholder="Username" />
+          <input type="password" id="password" placeholder="Password" />
+          <button onclick="login()">Login</button>
+          <button onclick="showRegister()">Register</button>
+        </div>
+        <!-- Register Form (hidden by default) -->
+        <div id="register-form" class="auth-form hidden">
+          <input type="text" id="reg-username" placeholder="Username" />
+          <input type="email" id="reg-email" placeholder="Email" />
+          <input type="password" id="reg-password" placeholder="Password" />
+          <button onclick="register()">Create Account</button>
+          <button onclick="showLogin()">Back to Login</button>
+        </div>
+        <!-- User Info (hidden by default) -->
+        <div id="user-info" class="hidden">
+          <span id="user-welcome"></span>
+          <button onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="controls">
+        <div class="search-sort">
+          <input type="text" id="search" placeholder="Search stores..." />
+          <select id="district-filter">
+            <option value="">All Districts</option>
+          </select>
+          <select id="sort-by">
+            <option value="name">Sort by Name</option>
+            <option value="district">Sort by District</option>
+          </select>
+        </div>
+        <div id="admin-controls" class="hidden">
+          <button onclick="showAddStoreForm()">Add New Store</button>
+        </div>
+      </section>
+
+      <!-- Add/Edit Store Form (hidden by default) -->
+      <section id="store-form" class="hidden">
+        <h2 id="form-title">Add New Store</h2>
+        <form id="add-edit-store-form">
+          <input
+            type="text"
+            id="store-name"
+            placeholder="Store Name"
+            required
+          />
+          <input type="url" id="store-url" placeholder="Website URL" />
+          <select id="store-district" required>
+            <option value="">Select District</option>
+          </select>
+          <input type="text" id="store-phone" placeholder="Phone Number" />
+          <input type="email" id="store-email" placeholder="Email" />
+          <input type="text" id="store-address" placeholder="Address" />
+          <textarea id="store-description" placeholder="Description"></textarea>
+          <button type="submit">Save Store</button>
+          <button type="button" onclick="hideStoreForm()">Cancel</button>
+        </form>
+      </section>
+
+      <!-- Stores List -->
+      <section id="stores-list">
+        <!-- Stores will be dynamically added here -->
+      </section>
+    </main>
+
+    <!-- Store Details Modal -->
+    <div id="store-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <div id="store-details">
+          <!-- Store details will be dynamically added here -->
+        </div>
+      </div>
+    </div>
+
+    <script src="start.js"></script>
+  </body>
+</html>
