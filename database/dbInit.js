@@ -5,8 +5,7 @@ const bcrypt = require("bcrypt");
 const client = new Client({
   host: "localhost",
   port: 5432,
-  user: "postgres",
-  password: "12345",
+  user: "evellinmiyamoto",
   database: "postgres",
 });
 

@@ -15,17 +15,8 @@
           <input type="text" id="username" placeholder="Username" />
           <input type="password" id="password" placeholder="Password" />
           <button onclick="login()">Login</button>
-          <button onclick="showRegister()">Register</button>
         </div>
-        <!-- Register Form (hidden by default) -->
-        <div id="register-form" class="auth-form hidden">
-          <input type="text" id="reg-username" placeholder="Username" />
-          <input type="email" id="reg-email" placeholder="Email" />
-          <input type="password" id="reg-password" placeholder="Password" />
-          <button onclick="register()">Create Account</button>
-          <button onclick="showLogin()">Back to Login</button>
-        </div>
-        <!-- User Info (hidden by default) -->
+        <!-- User Info (hidden) -->
         <div id="user-info" class="hidden">
           <span id="user-welcome"></span>
           <button onclick="logout()">Logout</button>
@@ -55,7 +46,7 @@
         <div id="store-form" class="modal hidden">
           <div class="modal-content">
             <span class="close" onclick="hideStoreForm()">&times;</span>
-            <h2>Add New Store</h2>
+            <h2 id="form-title">Add New Store</h2>
             <form id="add-edit-store-form">
               <div class="form-group">
                 <label for="name">Store Name*</label>
@@ -106,18 +97,14 @@
       </div>
 
       <!-- Stores List -->
-      <section id="stores-list">
-        <!-- Stores will be dynamically added here -->
-      </section>
+      <section id="stores-list"></section>
     </main>
 
     <!-- Store Details Modal -->
     <div id="store-modal" class="modal hidden">
       <div class="modal-content">
         <span class="close" onclick="closeModal()">&times;</span>
-        <div id="store-details">
-          <!-- Store details will be dynamically added here -->
-        </div>
+        <div id="store-details"></div>
       </div>
     </div>
 

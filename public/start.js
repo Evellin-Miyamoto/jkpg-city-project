@@ -4,7 +4,6 @@ let districts = [];
 
 //DOM Elements
 const loginForm = document.getElementById("login-form");
-const registerForm = document.getElementById("register-form");
 const userInfo = document.getElementById("user-info");
 const storesList = document.getElementById("stores-list");
 const searchInput = document.getElementById("search");
@@ -13,17 +12,6 @@ const sortBy = document.getElementById("sort-by");
 const adminControls = document.getElementById("admin-controls");
 const storeForm = document.getElementById("store-form");
 const addEditStoreForm = document.getElementById("add-edit-store-form");
-
-//authentication functions
-function showRegister() {
-  loginForm.classList.add("hidden");
-  registerForm.classList.remove("hidden");
-}
-
-function showLogin() {
-  registerForm.classList.add("hidden");
-  loginForm.classList.remove("hidden");
-}
 
 async function login() {
   const username = document.getElementById("username").value;
@@ -64,7 +52,6 @@ function logout() {
 function updateAuthUI() {
   if (currentUser) {
     loginForm.classList.add("hidden");
-    registerForm.classList.add("hidden");
     userInfo.classList.remove("hidden");
     document.getElementById(
       "user-welcome"
@@ -76,7 +63,6 @@ function updateAuthUI() {
     }
   } else {
     loginForm.classList.remove("hidden");
-    registerForm.classList.add("hidden");
     userInfo.classList.add("hidden");
     adminControls.classList.add("hidden");
   }
@@ -192,31 +178,79 @@ function filterStores() {
 function showAddStoreForm() {
   document.getElementById("form-title").textContent = "Add New Store";
   addEditStoreForm.reset();
+  addEditStoreForm.removeAttribute("data-store-id");
   storeForm.classList.remove("hidden");
 }
 
-function showStoreForm() {
-  const storeFormModal = document.getElementById("store-form");
-  storeFormModal.classList.remove("hidden");
-  storeFormModal.classList.add("show");
+function showEditStoreForm(store) {
+  document.getElementById("form-title").textContent = "Edit Store";
+  const form = document.getElementById("add-edit-store-form");
 
-  // load districts in the dropdown
-  loadDistricts();
+  //fill the form with store data
+  form.elements["name"].value = store.name || "";
+  form.elements["url"].value = store.url || "";
+  form.elements["district"].value = store.district || "";
+  form.elements["description"].value = store.description || "";
+  form.elements["phone"].value = store.phone || "";
+  form.elements["email"].value = store.email || "";
+  form.elements["address"].value = store.address || "";
+  form.elements["categories"].value = store.categories
+    ? store.categories.join(", ")
+    : "";
+
+  form.setAttribute("data-store-id", store.id);
+
+  storeForm.classList.remove("hidden");
+  storeForm.classList.add("show");
+
+  form.querySelector("button[type='submit']").textContent = "Update Store";
 }
 
-function hideStoreForm() {
-  const storeFormModal = document.getElementById("store-form");
-  storeFormModal.classList.remove("show");
-  storeFormModal.classList.add("hidden");
-  document.getElementById("add-edit-store-form").reset();
+async function editStore(storeId) {
+  try {
+    const response = await fetch(`/api/stores/${storeId}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch store details");
+    }
+    const store = await response.json();
+    showEditStoreForm(store);
+  } catch (error) {
+    alert(error.message);
+  }
 }
 
-async function addStore(event) {
+async function deleteStore(storeId) {
+  if (!confirm("Are you sure you want to delete this store?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/stores/${storeId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to delete store");
+    }
+
+    alert("Store deleted successfully!");
+    await loadStores();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function handleStoreSubmit(event) {
   event.preventDefault();
 
   const formData = new FormData(event.target);
+  const storeId = event.target.getAttribute("data-store-id");
 
-  //to fix the websites problems
+  //format URL if provided
   let url = formData.get("url");
   if (url && !url.startsWith("http")) {
     url = "https://" + url;
@@ -239,8 +273,11 @@ async function addStore(event) {
   };
 
   try {
-    const response = await fetch("/api/stores", {
-      method: "POST",
+    const method = storeId ? "PUT" : "POST";
+    const url = storeId ? `/api/stores/${storeId}` : "/api/stores";
+
+    const response = await fetch(url, {
+      method: method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -250,13 +287,15 @@ async function addStore(event) {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || "Failed to add store");
+      throw new Error(
+        error.error || `Failed to ${storeId ? "update" : "add"} store`
+      );
     }
 
     const newStore = await response.json();
-    alert("Store added successfully!");
+    alert(`Store ${storeId ? "updated" : "added"} successfully!`);
 
-    //reset form and refresh stores list
+    //reset form and refresh storeslist
     hideStoreForm();
     await loadStores();
   } catch (error) {
@@ -264,9 +303,24 @@ async function addStore(event) {
   }
 }
 
-//event listener for the store form
+//update the form event listener
 document
   .getElementById("add-edit-store-form")
-  .addEventListener("submit", addStore);
+  .addEventListener("submit", handleStoreSubmit);
+
+function showStoreForm() {
+  const storeFormModal = document.getElementById("store-form");
+  storeFormModal.classList.remove("hidden");
+  storeFormModal.classList.add("show");
+
+  loadDistricts();
+}
+
+function hideStoreForm() {
+  const storeFormModal = document.getElementById("store-form");
+  storeFormModal.classList.remove("show");
+  storeFormModal.classList.add("hidden");
+  document.getElementById("add-edit-store-form").reset();
+}
 
 loadStores();

@@ -17,8 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 const client = new Client({
   host: "localhost",
   port: 5432,
-  user: "postgres",
-  password: "12345",
+  user: "evellinmiyamoto",
   database: "postgres",
 });
 
@@ -53,12 +52,12 @@ const startServer = async () => {
     await client.connect();
     console.log("Connected to PostgreSQL database");
 
+    //API Routes
     app.post("/api/auth/login", async (req, res) => {
       try {
         const { username, password } = req.body;
         console.log("Login attempt for:", username);
 
-        //get user from database
         const result = await client.query(
           "SELECT * FROM users WHERE username = $1",
           [username]
@@ -71,7 +70,6 @@ const startServer = async () => {
           return res.status(401).json({ error: "User not found" });
         }
 
-        //check password
         const validPassword = await bcrypt.compare(
           password,
           user.password_hash
@@ -82,7 +80,6 @@ const startServer = async () => {
           return res.status(401).json({ error: "Invalid password" });
         }
 
-        //create token
         const token = jwt.sign(
           {
             id: user.id,
@@ -104,7 +101,6 @@ const startServer = async () => {
       }
     });
 
-    //verify token route
     app.get("/api/auth/verify", authenticateToken, (req, res) => {
       res.json({ user: req.user });
     });
@@ -121,7 +117,25 @@ const startServer = async () => {
       }
     });
 
-    //Add store, only admin
+    app.get("/api/stores/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const result = await client.query(
+          "SELECT * FROM stores WHERE id = $1",
+          [id]
+        );
+
+        if (result.rows.length === 0) {
+          return res.status(404).json({ error: "Store not found" });
+        }
+
+        res.json(result.rows[0]);
+      } catch (err) {
+        console.error("Error fetching store:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    });
+
     app.post("/api/stores", authenticateToken, isAdmin, async (req, res) => {
       try {
         const {
@@ -166,7 +180,6 @@ const startServer = async () => {
       } catch (err) {
         console.error("Error creating store:", err);
         if (err.code === "23505") {
-          // Unique violation
           res
             .status(400)
             .json({ error: "A store with this name already exists" });
@@ -175,6 +188,89 @@ const startServer = async () => {
         }
       }
     });
+
+    app.put("/api/stores/:id", authenticateToken, isAdmin, async (req, res) => {
+      try {
+        const { id } = req.params;
+        const {
+          name,
+          url,
+          district,
+          description,
+          phone,
+          email,
+          address,
+          categories,
+        } = req.body;
+
+        const result = await client.query(
+          `UPDATE stores 
+          SET name = $1,
+              url = $2,
+              district = $3,
+              description = $4,
+              phone = $5,
+              email = $6,
+              address = $7,
+              categories = $8,
+              last_updated_by = $9,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = $10
+          RETURNING *`,
+          [
+            name,
+            url,
+            district,
+            description,
+            phone,
+            email,
+            address,
+            categories,
+            req.user.id,
+            id,
+          ]
+        );
+
+        if (result.rows.length === 0) {
+          return res.status(404).json({ error: "Store not found" });
+        }
+
+        res.json(result.rows[0]);
+      } catch (err) {
+        console.error("Error updating store:", err);
+        if (err.code === "23505") {
+          res
+            .status(400)
+            .json({ error: "A store with this name already exists" });
+        } else {
+          res.status(500).json({ error: "Internal server error" });
+        }
+      }
+    });
+
+    app.delete(
+      "/api/stores/:id",
+      authenticateToken,
+      isAdmin,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const result = await client.query(
+            "DELETE FROM stores WHERE id = $1 RETURNING *",
+            [id]
+          );
+
+          if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Store not found" });
+          }
+
+          res.json({ message: "Store deleted successfully" });
+        } catch (err) {
+          console.error("Error deleting store:", err);
+          res.status(500).json({ error: "Internal server error" });
+        }
+      }
+    );
 
     app.get("/api/stores/district/:district", async (req, res) => {
       try {
@@ -214,7 +310,6 @@ const startServer = async () => {
       }
     });
 
-    //health check
     app.get("/api/health", (req, res) => {
       res.json({ status: "OK", message: "Server is running" });
     });
@@ -222,7 +317,6 @@ const startServer = async () => {
     //static files
     app.use(express.static(path.join(__dirname, "../public")));
 
-    //index.html for all other routes
     app.get("*", (req, res) => {
       res.sendFile(path.join(__dirname, "../public/index.html"));
     });
