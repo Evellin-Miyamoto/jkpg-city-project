@@ -194,9 +194,6 @@ function showEditStoreForm(store) {
   form.elements["phone"].value = store.phone || "";
   form.elements["email"].value = store.email || "";
   form.elements["address"].value = store.address || "";
-  form.elements["categories"].value = store.categories
-    ? store.categories.join(", ")
-    : "";
 
   form.setAttribute("data-store-id", store.id);
 
@@ -264,12 +261,6 @@ async function handleStoreSubmit(event) {
     phone: formData.get("phone"),
     email: formData.get("email"),
     address: formData.get("address"),
-    categories: formData.get("categories")
-      ? formData
-          .get("categories")
-          .split(",")
-          .map((cat) => cat.trim())
-      : [],
   };
 
   try {
