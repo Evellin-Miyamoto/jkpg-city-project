@@ -2,6 +2,9 @@ let currentUser = null;
 let stores = [];
 let districts = [];
 
+// API endpoints
+const API_URL = "http://localhost:3000/backend/api";
+
 //DOM Elements
 const loginForm = document.getElementById("login-form");
 const userInfo = document.getElementById("user-info");
@@ -18,7 +21,7 @@ async function login() {
   const password = document.getElementById("password").value;
 
   try {
-    const response = await fetch("/api/auth/login", {
+    const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -70,7 +73,7 @@ function updateAuthUI() {
 
 async function loadStores() {
   try {
-    const response = await fetch("/api/stores");
+    const response = await fetch(`${API_URL}/stores`);
     stores = await response.json();
     await loadDistricts();
     displayStores(stores);
@@ -81,7 +84,7 @@ async function loadStores() {
 
 async function loadDistricts() {
   try {
-    const response = await fetch("/api/districts");
+    const response = await fetch(`${API_URL}/districts`);
     districts = await response.json();
     updateDistrictFilters(districts);
   } catch (error) {
@@ -205,7 +208,7 @@ function showEditStoreForm(store) {
 
 async function editStore(storeId) {
   try {
-    const response = await fetch(`/api/stores/${storeId}`);
+    const response = await fetch(`${API_URL}/stores/${storeId}`);
     if (!response.ok) {
       throw new Error("Failed to fetch store details");
     }
@@ -222,7 +225,7 @@ async function deleteStore(storeId) {
   }
 
   try {
-    const response = await fetch(`/api/stores/${storeId}`, {
+    const response = await fetch(`${API_URL}/stores/${storeId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -265,9 +268,11 @@ async function handleStoreSubmit(event) {
 
   try {
     const method = storeId ? "PUT" : "POST";
-    const url = storeId ? `/api/stores/${storeId}` : "/api/stores";
+    const apiUrl = storeId
+      ? `${API_URL}/stores/${storeId}`
+      : `${API_URL}/stores`;
 
-    const response = await fetch(url, {
+    const response = await fetch(apiUrl, {
       method: method,
       headers: {
         "Content-Type": "application/json",

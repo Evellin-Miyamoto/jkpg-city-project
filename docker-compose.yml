@@ -1,15 +1,64 @@
 version: "3.8"
+
 services:
-  db:
-    image: postgres:latest
-    environment:
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "5432:5432"
+      - "80:80"
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=http://localhost:3000
+    networks:
+      - jkpg_network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@database:5432/postgres
+      - JWT_SECRET=your-secret-key
+    networks:
+      - jkpg_network
+    restart: unless-stopped
+
+  database:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    image: postgres:17-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - jkpg_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  jkpg_network:
+    driver: bridge
 
 volumes:
   postgres_data:
+    driver: local

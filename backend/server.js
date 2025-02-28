@@ -14,11 +14,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from the frontend/public directory
+app.use(express.static(path.join(__dirname, "../frontend/public")));
+
+// Parse DATABASE_URL
+const dbUrl =
+  process.env.DATABASE_URL ||
+  "postgres://evellinmiyamoto@localhost:5432/postgres";
 const client = new Client({
-  host: "localhost",
-  port: 5432,
-  user: "evellinmiyamoto",
-  database: "postgres",
+  connectionString: dbUrl,
 });
 
 //athentication
@@ -53,7 +57,7 @@ const startServer = async () => {
     console.log("Connected to PostgreSQL database");
 
     //API Routes
-    app.post("/api/auth/login", async (req, res) => {
+    app.post("/backend/api/auth/login", async (req, res) => {
       try {
         const { username, password } = req.body;
         console.log("Login attempt for:", username);
@@ -101,11 +105,11 @@ const startServer = async () => {
       }
     });
 
-    app.get("/api/auth/verify", authenticateToken, (req, res) => {
+    app.get("/backend/api/auth/verify", authenticateToken, (req, res) => {
       res.json({ user: req.user });
     });
 
-    app.get("/api/stores", async (req, res) => {
+    app.get("/backend/api/stores", async (req, res) => {
       try {
         const result = await client.query("SELECT * FROM stores ORDER BY name");
         res.json(result.rows);
@@ -117,7 +121,7 @@ const startServer = async () => {
       }
     });
 
-    app.get("/api/stores/:id", async (req, res) => {
+    app.get("/backend/api/stores/:id", async (req, res) => {
       try {
         const { id } = req.params;
         const result = await client.query(
@@ -136,21 +140,25 @@ const startServer = async () => {
       }
     });
 
-    app.post("/api/stores", authenticateToken, isAdmin, async (req, res) => {
-      try {
-        const {
-          name,
-          url,
-          district,
-          description,
-          phone,
-          email,
-          address,
-          categories,
-        } = req.body;
+    app.post(
+      "/backend/api/stores",
+      authenticateToken,
+      isAdmin,
+      async (req, res) => {
+        try {
+          const {
+            name,
+            url,
+            district,
+            description,
+            phone,
+            email,
+            address,
+            categories,
+          } = req.body;
 
-        const result = await client.query(
-          `INSERT INTO stores (
+          const result = await client.query(
+            `INSERT INTO stores (
             name,
             url,
             district,
@@ -163,7 +171,41 @@ const startServer = async () => {
             last_updated_by
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
           RETURNING *`,
-          [
+            [
+              name,
+              url,
+              district,
+              description,
+              phone,
+              email,
+              address,
+              categories,
+              req.user.id,
+            ]
+          );
+
+          res.status(201).json(result.rows[0]);
+        } catch (err) {
+          console.error("Error creating store:", err);
+          if (err.code === "23505") {
+            res
+              .status(400)
+              .json({ error: "A store with this name already exists" });
+          } else {
+            res.status(500).json({ error: "Internal server error" });
+          }
+        }
+      }
+    );
+
+    app.put(
+      "/backend/api/stores/:id",
+      authenticateToken,
+      isAdmin,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const {
             name,
             url,
             district,
@@ -172,39 +214,10 @@ const startServer = async () => {
             email,
             address,
             categories,
-            req.user.id,
-          ]
-        );
+          } = req.body;
 
-        res.status(201).json(result.rows[0]);
-      } catch (err) {
-        console.error("Error creating store:", err);
-        if (err.code === "23505") {
-          res
-            .status(400)
-            .json({ error: "A store with this name already exists" });
-        } else {
-          res.status(500).json({ error: "Internal server error" });
-        }
-      }
-    });
-
-    app.put("/api/stores/:id", authenticateToken, isAdmin, async (req, res) => {
-      try {
-        const { id } = req.params;
-        const {
-          name,
-          url,
-          district,
-          description,
-          phone,
-          email,
-          address,
-          categories,
-        } = req.body;
-
-        const result = await client.query(
-          `UPDATE stores 
+          const result = await client.query(
+            `UPDATE stores 
           SET name = $1,
               url = $2,
               district = $3,
@@ -217,39 +230,40 @@ const startServer = async () => {
               updated_at = CURRENT_TIMESTAMP
           WHERE id = $10
           RETURNING *`,
-          [
-            name,
-            url,
-            district,
-            description,
-            phone,
-            email,
-            address,
-            categories,
-            req.user.id,
-            id,
-          ]
-        );
+            [
+              name,
+              url,
+              district,
+              description,
+              phone,
+              email,
+              address,
+              categories,
+              req.user.id,
+              id,
+            ]
+          );
 
-        if (result.rows.length === 0) {
-          return res.status(404).json({ error: "Store not found" });
-        }
+          if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Store not found" });
+          }
 
-        res.json(result.rows[0]);
-      } catch (err) {
-        console.error("Error updating store:", err);
-        if (err.code === "23505") {
-          res
-            .status(400)
-            .json({ error: "A store with this name already exists" });
-        } else {
-          res.status(500).json({ error: "Internal server error" });
+          res.json(result.rows[0]);
+        } catch (err) {
+          console.error("Error updating store:", err);
+          if (err.code === "23505") {
+            res
+              .status(400)
+              .json({ error: "A store with this name already exists" });
+          } else {
+            res.status(500).json({ error: "Internal server error" });
+          }
         }
       }
-    });
+    );
 
     app.delete(
-      "/api/stores/:id",
+      "/backend/api/stores/:id",
       authenticateToken,
       isAdmin,
       async (req, res) => {
@@ -272,7 +286,7 @@ const startServer = async () => {
       }
     );
 
-    app.get("/api/stores/district/:district", async (req, res) => {
+    app.get("/backend/api/stores/district/:district", async (req, res) => {
       try {
         const result = await client.query(
           "SELECT * FROM stores WHERE district = $1 ORDER BY name",
@@ -285,7 +299,7 @@ const startServer = async () => {
       }
     });
 
-    app.get("/api/districts", async (req, res) => {
+    app.get("/backend/api/districts", async (req, res) => {
       try {
         const result = await client.query(
           "SELECT DISTINCT district FROM stores WHERE district IS NOT NULL ORDER BY district"
@@ -297,7 +311,7 @@ const startServer = async () => {
       }
     });
 
-    app.get("/api/stores/search/:query", async (req, res) => {
+    app.get("/backend/api/stores/search/:query", async (req, res) => {
       try {
         const result = await client.query(
           "SELECT * FROM stores WHERE name ILIKE $1 ORDER BY name",
@@ -310,15 +324,12 @@ const startServer = async () => {
       }
     });
 
-    app.get("/api/health", (req, res) => {
+    app.get("/backend/api/health", (req, res) => {
       res.json({ status: "OK", message: "Server is running" });
     });
 
-    //static files
-    app.use(express.static(path.join(__dirname, "../public")));
-
     app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "../public/index.html"));
+      res.sendFile(path.join(__dirname, "../frontend/public/index.html"));
     });
 
     app.listen(PORT, () => {

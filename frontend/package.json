@@ -1,0 +1,11 @@
+{
+  "name": "jkpg-city-stores-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for Jönköping city stores",
+  "scripts": {
+    "start": "serve -s public -l 80"
+  },
+  "dependencies": {
+    "serve": "^14.2.1"
+  }
+}
