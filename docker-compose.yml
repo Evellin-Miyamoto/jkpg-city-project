@@ -1,64 +1,46 @@
 version: "3.8"
 
 services:
-  frontend:
+  backend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: ./backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - pgdb
+    environment:
+      - DB_HOST=pgdb
+      - DB_PORT=5432
+      - DB_USER=pguser
+      - DB_PASSWORD=pgpassword
+      - DB_NAME=jkpg_city_project
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build: ./frontend
     ports:
       - "80:80"
     depends_on:
       - backend
-    environment:
-      - NODE_ENV=production
-      - BACKEND_URL=http://localhost:3000
-    networks:
-      - jkpg_network
-    restart: unless-stopped
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      database:
-        condition: service_healthy
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:postgres@database:5432/postgres
-      - JWT_SECRET=your-secret-key
-    networks:
-      - jkpg_network
-    restart: unless-stopped
-
-  database:
-    build:
-      context: ./database
-      dockerfile: Dockerfile
+  pgdb:
     image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=pguser
+      - POSTGRES_PASSWORD=pgpassword
+      - POSTGRES_DB=jkpg_city_project
+    volumes:
+      - pgdata_new:/var/lib/postgresql/data
     ports:
       - "5433:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - jkpg_network
+    restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U pguser -d jkpg_city_project"]
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
-
-networks:
-  jkpg_network:
-    driver: bridge
 
 volumes:
-  postgres_data:
-    driver: local
+  pgdata_new:

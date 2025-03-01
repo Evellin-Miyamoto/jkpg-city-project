@@ -1,12 +1,13 @@
 const { Client } = require("pg");
 const fs = require("fs");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 const client = new Client({
-  host: "localhost",
+  host: "database",
   port: 5432,
-  user: "evellinmiyamoto",
-  database: "postgres",
+  user: "postgres",
+  password: "postgres",
+  database: "jkpg_city_project",
 });
 
 async function initDB() {

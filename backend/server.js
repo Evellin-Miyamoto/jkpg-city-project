@@ -1,7 +1,7 @@
 const express = require("express");
 const { Client } = require("pg");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const PORT = process.env.PORT || 3000;
 const path = require("path");
@@ -17,12 +17,12 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from the frontend/public directory
 app.use(express.static(path.join(__dirname, "../frontend/public")));
 
-// Parse DATABASE_URL
-const dbUrl =
-  process.env.DATABASE_URL ||
-  "postgres://evellinmiyamoto@localhost:5432/postgres";
 const client = new Client({
-  connectionString: dbUrl,
+  host: process.env.DB_HOST || "pgdb",
+  port: parseInt(process.env.DB_PORT || "5432"),
+  user: process.env.DB_USER || "pguser",
+  password: process.env.DB_PASSWORD || "pgpassword",
+  database: process.env.DB_NAME || "jkpg_city_project",
 });
 
 //athentication
