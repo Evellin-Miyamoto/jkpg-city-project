@@ -3,12 +3,19 @@ const fs = require("fs");
 const bcrypt = require("bcryptjs");
 
 const client = new Client({
-  host: "database",
-  port: 5432,
-  user: "postgres",
-  password: "postgres",
-  database: "jkpg_city_project",
+  host: process.env.DB_HOST || "pgdb",
+  port: parseInt(process.env.DB_PORT || "5432"),
+  user: process.env.DB_USER || "pguser",
+  password: process.env.DB_PASSWORD || "pgpassword",
+  database: process.env.DB_NAME || "jkpg_city_project",
 });
+
+const formatUrl = (url) => {
+  if (url && !url.startsWith("http")) {
+    return "https://" + url;
+  }
+  return url
+}
 
 async function initDB() {
   try {
@@ -92,7 +99,7 @@ async function initDB() {
       `;
       await client.query(insertQuery, [
         store.name,
-        store.url,
+        formatUrl(store.url),
         store.district,
         "Description will be added later",
         [store.district || "Uncategorized"],

@@ -15,8 +15,12 @@ services:
       - DB_PASSWORD=pgpassword
       - DB_NAME=jkpg_city_project
     volumes:
-      - ./backend:/app
-      - /app/node_modules
+      - ./backend:/app  # Mount only the backend folder
+      - ./database:/app/database
+      - /app/node_modules  # Keep node_modules persistent
+    working_dir: /app  # Make sure commands run inside backend
+    command: >
+      sh -c "node dbInit.js && npm start"
 
   frontend:
     build: ./frontend
@@ -33,6 +37,7 @@ services:
       - POSTGRES_DB=jkpg_city_project
     volumes:
       - pgdata_new:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
     restart: always
