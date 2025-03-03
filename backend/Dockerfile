@@ -8,7 +8,6 @@ COPY package*.json ./
 # Install dependencies
 # Add bcryptjs explicitly
 RUN npm install
-RUN npm install bcryptjs --save
 
 # Copy application files
 COPY . .

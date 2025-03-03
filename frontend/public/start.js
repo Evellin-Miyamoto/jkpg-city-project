@@ -178,18 +178,10 @@ function filterStores() {
   displayStores(filtered);
 }
 
-function showAddStoreForm() {
-  document.getElementById("form-title").textContent = "Add New Store";
-  addEditStoreForm.reset();
-  addEditStoreForm.removeAttribute("data-store-id");
-  storeForm.classList.remove("hidden");
-}
-
 function showEditStoreForm(store) {
   document.getElementById("form-title").textContent = "Edit Store";
   const form = document.getElementById("add-edit-store-form");
 
-  //fill the form with store data
   form.elements["name"].value = store.name || "";
   form.elements["url"].value = store.url || "";
   form.elements["district"].value = store.district || "";
@@ -303,6 +295,21 @@ async function handleStoreSubmit(event) {
 document
   .getElementById("add-edit-store-form")
   .addEventListener("submit", handleStoreSubmit);
+
+function showAddStoreForm() {
+  const storeFormModal = document.getElementById("store-form");
+  const form = document.getElementById("add-edit-store-form");
+  form.reset();
+  form.removeAttribute("data-store-id");
+  document.getElementById("form-title").textContent = "Add New Store";
+
+  storeFormModal.classList.remove("hidden");
+  storeFormModal.classList.add("show");
+
+  loadDistricts();
+
+}
+
 
 function showStoreForm() {
   const storeFormModal = document.getElementById("store-form");
