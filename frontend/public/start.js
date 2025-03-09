@@ -1,6 +1,8 @@
 let currentUser = null;
 let stores = [];
 let districts = [];
+let currentSlide = 0;
+let totalSlides = 0;
 
 // API endpoints
 const API_URL = "http://localhost:3000/backend/api";
@@ -325,5 +327,109 @@ function hideStoreForm() {
   storeFormModal.classList.add("hidden");
   document.getElementById("add-edit-store-form").reset();
 }
+
+function initializeCarousel(stores) {
+    const track = document.querySelector('.carousel-track');
+    const dotsContainer = document.querySelector('.carousel-dots');
+    
+    if (!track || !dotsContainer) {
+        console.error('Carousel elements not found');
+        return;
+    }
+    
+    // Clear existing content
+    track.innerHTML = '';
+    dotsContainer.innerHTML = '';
+    
+    // Filter for featured stores (you can modify this criteria)
+    const featuredStores = stores.slice(0, 9); // Show first 9 stores
+    
+    // Create carousel items
+    featuredStores.forEach((store, index) => {
+        const item = document.createElement('div');
+        item.className = 'carousel-item';
+        item.innerHTML = `
+            <h3>${store.name}</h3>
+            <p class="district"><strong>District:</strong> ${store.district}</p>
+            ${store.description ? `<p class="description">${store.description.substring(0, 100)}${store.description.length > 100 ? '...' : ''}</p>` : ''}
+            <button onclick="showStoreDetails(${store.id})" class="view-details">
+                View Details
+            </button>
+        `;
+        track.appendChild(item);
+        
+        // Create dot
+        const dot = document.createElement('div');
+        dot.className = `dot ${index === 0 ? 'active' : ''}`;
+        dot.onclick = () => goToSlide(index);
+        dotsContainer.appendChild(dot);
+    });
+    
+    totalSlides = Math.ceil(featuredStores.length / getItemsPerView());
+    updateCarouselPosition();
+    
+    // Log for debugging
+    console.log(`Initialized carousel with ${featuredStores.length} stores and ${totalSlides} slides`);
+}
+
+function getItemsPerView() {
+    if (window.innerWidth <= 768) return 1;
+    if (window.innerWidth <= 1024) return 2;
+    return 3;
+}
+
+function moveCarousel(direction) {
+    currentSlide = (currentSlide + direction + totalSlides) % totalSlides;
+    updateCarouselPosition();
+}
+
+function goToSlide(slideIndex) {
+    currentSlide = slideIndex;
+    updateCarouselPosition();
+}
+
+function updateCarouselPosition() {
+    const track = document.querySelector('.carousel-track');
+    if (!track) return;
+    
+    const itemsPerView = getItemsPerView();
+    const shift = -(currentSlide * (100 / itemsPerView));
+    track.style.transform = `translateX(${shift}%)`;
+    
+    // Update dots
+    document.querySelectorAll('.dot').forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentSlide);
+    });
+}
+
+// Update the fetch stores function
+async function fetchStores() {
+    try {
+        const response = await fetch('/api/stores');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const stores = await response.json();
+        console.log('Fetched stores:', stores); // Debug log
+        
+        // Initialize carousel with stores
+        initializeCarousel(stores);
+        
+        // Your existing code for displaying stores in the grid
+        displayStores(stores);
+    } catch (error) {
+        console.error('Error fetching stores:', error);
+    }
+}
+
+// Add event listeners when the document loads
+document.addEventListener('DOMContentLoaded', () => {
+    fetchStores();
+    
+    // Add window resize listener
+    window.addEventListener('resize', () => {
+        updateCarouselPosition();
+    });
+});
 
 loadStores();

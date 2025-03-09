@@ -22,3 +22,6 @@ EXPOSE 80
 
 # Start the application with no caching
 CMD ["sh", "-c", "node_modules/.bin/serve -s public -l 80 $SERVE_OPTS"]
+
+FROM nginx:alpine
+COPY public /usr/share/nginx/html

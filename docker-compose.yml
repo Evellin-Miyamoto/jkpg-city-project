@@ -15,9 +15,10 @@ services:
       - DB_PASSWORD=pgpassword
       - DB_NAME=jkpg_city_project
     volumes:
-      - ./backend:/app  # Mount only the backend folder
+      - ./backend:/app
+      - ./frontend:/frontend:ro  # Add ':ro' for read-only access
       - ./database:/app/database
-      - /app/node_modules  # Keep node_modules persistent
+      - /app/node_modules
     working_dir: /app  # Make sure commands run inside backend
     command: >
       sh -c "node dbInit.js && npm start"

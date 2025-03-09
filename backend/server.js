@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const PORT = process.env.PORT || 3000;
 const path = require("path");
+const fs = require('fs');
 
 const JWT_SECRET = "your-secret-key";
 
@@ -14,8 +15,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the frontend/public directory
-app.use(express.static(path.join(__dirname, "../frontend/public")));
+// Add debugging
+const frontendPath = '/frontend/public';
+console.log('Checking frontend path:', frontendPath);
+console.log('Directory contents:', fs.readdirSync('/frontend'));
+
+app.use(express.static(frontendPath));
 
 const client = new Client({
   host: process.env.DB_HOST || "pgdb",
@@ -328,12 +333,16 @@ const startServer = async () => {
       res.json({ status: "OK", message: "Server is running" });
     });
 
+    app.get("/test", (req, res) => {
+      res.send("Backend is working");
+    });
+
     app.get("*", (req, res) => {
       res.sendFile(path.join(__dirname, "../frontend/public/index.html"));
     });
 
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+      console.log(`Server is running on http://localhost:${PORT}`);
     });
   } catch (err) {
     console.error("Connection error:", err.stack);
