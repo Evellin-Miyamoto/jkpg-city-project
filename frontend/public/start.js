@@ -350,11 +350,9 @@ function initializeCarousel(stores) {
         item.className = 'carousel-item';
         item.innerHTML = `
             <h3>${store.name}</h3>
-            <p class="district"><strong>District:</strong> ${store.district}</p>
-            ${store.description ? `<p class="description">${store.description.substring(0, 100)}${store.description.length > 100 ? '...' : ''}</p>` : ''}
-            <button onclick="showStoreDetails(${store.id})" class="view-details">
-                View Details
-            </button>
+            <p class="district">${store.district}</p>
+            <p class="description">${store.description || 'No description available'}</p>
+            <button onclick="showStoreDetails(${store.id})">View Details</button>
         `;
         track.appendChild(item);
         
@@ -405,10 +403,15 @@ function updateCarouselPosition() {
 // Update the fetch stores function
 async function fetchStores() {
     try {
-        const response = await fetch('/api/stores');
+        console.log('Fetching from:', `${API_URL}/stores`); // Debug log
+        const response = await fetch(`${API_URL}/stores`);
+        
         if (!response.ok) {
+            const text = await response.text();
+            console.error('Response content:', text); // Debug log
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
         const stores = await response.json();
         console.log('Fetched stores:', stores); // Debug log
         
@@ -419,6 +422,7 @@ async function fetchStores() {
         displayStores(stores);
     } catch (error) {
         console.error('Error fetching stores:', error);
+        console.error('Error details:', error.message); // More detailed error logging
     }
 }
 
@@ -433,3 +437,41 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 loadStores();
+
+// Add this function to handle store details display
+async function showStoreDetails(storeId) {
+    try {
+        const response = await fetch(`${API_URL}/stores/${storeId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const store = await response.json();
+        
+        // Create and show modal with store details
+        const modal = document.getElementById('store-modal');
+        const details = document.getElementById('store-details');
+        
+        details.innerHTML = `
+            <h2>${store.name}</h2>
+            <p><strong>District:</strong> ${store.district || 'N/A'}</p>
+            ${store.description ? `<p>${store.description}</p>` : ''}
+            ${store.url ? `<p><a href="${store.url}" target="_blank">Visit Website</a></p>` : ''}
+            ${store.phone ? `<p><strong>Phone:</strong> ${store.phone}</p>` : ''}
+            ${store.email ? `<p><strong>Email:</strong> ${store.email}</p>` : ''}
+            ${store.address ? `<p><strong>Address:</strong> ${store.address}</p>` : ''}
+        `;
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('show');
+    } catch (error) {
+        console.error('Error fetching store details:', error);
+        alert('Failed to load store details');
+    }
+}
+
+// Add this function to close the modal
+function closeModal() {
+    const modal = document.getElementById('store-modal');
+    modal.classList.remove('show');
+    modal.classList.add('hidden');
+}
