@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jönköping City Stores</title>
     <link rel="stylesheet" href="/css/styles.css?v=1" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_back_ios,arrow_forward_ios" />
   </head>
   <body>
     <header>
@@ -24,23 +25,27 @@
       </div>
     </header>
 
+    <!-- Add this new hero section -->
+    <section class="hero">
+      <div class="hero-content">
+        <h2>Discover Jönköping's Best Stores</h2>
+        <p>Explore the heart of the city's shopping experience</p>
+      </div>
+    </section>
+
     <main>
       <!-- Add this section before your existing stores-list -->
       <section id="featured-stores" class="carousel-container">
         <h2>Featured Stores</h2>
         <div class="carousel-wrapper">
           <button class="carousel-button prev" onclick="moveCarousel(-1)">
-            <svg viewBox="0 0 24 24" width="24" height="24">
-              <path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-            </svg>
+            <span class="material-symbols-rounded">arrow_back_ios</span>
           </button>
           <div class="carousel-content">
             <div class="carousel-track"></div>
           </div>
           <button class="carousel-button next" onclick="moveCarousel(1)">
-            <svg viewBox="0 0 24 24" width="24" height="24">
-              <path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-            </svg>
+            <span class="material-symbols-rounded">arrow_forward_ios</span>
           </button>
         </div>
         <div class="carousel-dots"></div>

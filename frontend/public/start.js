@@ -341,8 +341,9 @@ function initializeCarousel(stores) {
     track.innerHTML = '';
     dotsContainer.innerHTML = '';
     
-    // Filter for featured stores (you can modify this criteria)
-    const featuredStores = stores.slice(0, 9); // Show first 9 stores
+    // Randomly select 9 stores
+    const shuffledStores = [...stores].sort(() => Math.random() - 0.5);
+    const featuredStores = shuffledStores.slice(0, 9);
     
     // Create carousel items
     featuredStores.forEach((store, index) => {
@@ -350,24 +351,22 @@ function initializeCarousel(stores) {
         item.className = 'carousel-item';
         item.innerHTML = `
             <h3>${store.name}</h3>
-            <p class="district">${store.district}</p>
             <p class="description">${store.description || 'No description available'}</p>
             <button onclick="showStoreDetails(${store.id})">View Details</button>
         `;
         track.appendChild(item);
-        
-        // Create dot
-        const dot = document.createElement('div');
-        dot.className = `dot ${index === 0 ? 'active' : ''}`;
-        dot.onclick = () => goToSlide(index);
-        dotsContainer.appendChild(dot);
     });
     
-    totalSlides = Math.ceil(featuredStores.length / getItemsPerView());
-    updateCarouselPosition();
+    // Create only 2 dots
+    for (let i = 0; i < 2; i++) {
+        const dot = document.createElement('div');
+        dot.className = `dot ${i === 0 ? 'active' : ''}`;
+        dot.onclick = () => goToSlide(i);
+        dotsContainer.appendChild(dot);
+    }
     
-    // Log for debugging
-    console.log(`Initialized carousel with ${featuredStores.length} stores and ${totalSlides} slides`);
+    totalSlides = 2; // Set total slides to 2
+    updateCarouselPosition();
 }
 
 function getItemsPerView() {
